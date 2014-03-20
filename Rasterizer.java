@@ -51,7 +51,7 @@ public class Rasterizer {
 
         //Create EdgeBuckets for all pairs n, n+1
         for(int i=0; i< n-1; i++){
-            if(y[i] != y[i+1]){
+            if(y[i].floatValue() != y[i+1].floatValue()){
                 buckets.add(createEdgeBucket(x[i],y[i],x[i+1], y[i+1]));
 
                 //find the yMin and yMax values for this polygon
