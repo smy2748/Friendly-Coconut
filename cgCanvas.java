@@ -12,9 +12,16 @@
  */
 
 import Jama.*;
+
+import javax.swing.text.View;
 import java.util.*;
 
 public class cgCanvas extends simpleCanvas {
+    protected ArrayList<MyPolygon> polys;
+    protected int id;
+    protected Matrix curTransform;
+    protected ClipWindowStruct cws;
+    protected ViewWindowStruct vws;
 
     /**
      * Constructor
@@ -26,6 +33,11 @@ public class cgCanvas extends simpleCanvas {
     {
         super (w, h);
         // YOUR IMPLEMENTATION HERE if you need to modify the constructor
+        polys = new ArrayList<MyPolygon>();
+        id = 0;
+        curTransform = Matrix.identity(3,3);
+        cws = new ClipWindowStruct();
+        vws = new ViewWindowStruct();
     }
 
     /**
@@ -44,10 +56,13 @@ public class cgCanvas extends simpleCanvas {
      */
     public int addPoly (float x[], float y[], int n)
     {
-        // YOUR IMPLEMENTATION HERE
+        int curid = id;
+        id++;
+        MyPolygon p = new MyPolygon(x,y,n);
+        polys.add(curid, p);
 
         // REMEMBER TO RETURN A UNIQUE ID FOR THE POLYGON
-        return 0;
+        return curid;
     }
 
     /**
@@ -60,7 +75,49 @@ public class cgCanvas extends simpleCanvas {
      */
     public void drawPoly (int polyID)
     {
-        // YOUR IMPLEMENTATION HERE
+        MyPolygon p = polys.get(polyID);
+
+        //Apply transform
+        p = p.applyTranform(curTransform);
+
+
+        //Clip
+        float fx[], fy[],nx[],ny[];
+        Float x[], y[];
+        clipper c = new clipper();
+        x = p.getXs().toArray(new Float[p.getXs().size()]);
+        y= p.getYs().toArray(new Float[p.getYs().size()]);
+
+        fx = new float[x.length];
+        fy = new float[y.length];
+
+        for(int i=0; i< x.length;i++){
+            fx[i] = x[i];
+            fy[i] = y[i];
+        }
+        nx = new float[100];
+        ny = new float[100];
+        int len = c.clipPolygon(x.length,fx,fy,nx,ny,cws.left,cws.bttm,cws.right,cws.top);
+
+
+        //Viewport
+        Matrix view;
+        double  sx = (vws.width)/(cws.right-cws.left),
+                sy = (vws.height)/(cws.top - cws.bttm),
+                tx = (cws.right*vws.x - cws.left*(vws.x+vws.width))/(cws.right-cws.left),
+                ty = (cws.top*vws.y - cws.bttm*(vws.y+vws.height))/(cws.top- cws.bttm);
+        double [][] viewCol= {{sx,0,tx},{0,sy,ty},{0,0,1}};
+
+        view = Matrix.constructWithCopy(viewCol);
+
+        MyPolygon another = new MyPolygon(nx,ny,len);
+        another = another.applyTranform(view);
+
+        Rasterizer r = new Rasterizer(this.getHeight());
+
+
+        ArrayList<Float> xs = another.getXs(), ys= another.getYs();
+        r.drawPolygon(len,xs.toArray(new Float[xs.size()]),ys.toArray(new Float[ys.size()]),this);
     }
 
     /**
@@ -70,7 +127,7 @@ public class cgCanvas extends simpleCanvas {
      */
     public void clearTransform()
     {
-        // YOUR IMPLEMENTATION HERE
+        curTransform = Matrix.identity(3,3);
     }
 
     /**
@@ -85,7 +142,10 @@ public class cgCanvas extends simpleCanvas {
      */
     public void translate (float x, float y)
     {
-        // YOUR IMPLEMENTATION HERE
+        double mAsA [][] = {{1,0,x},{0,1,y},{0,0,1}};
+        Matrix m = Matrix.constructWithCopy(mAsA);
+        curTransform = m.times(curTransform);
+
     }
 
     /**
@@ -98,8 +158,10 @@ public class cgCanvas extends simpleCanvas {
      *
      */
     public void rotate (float degrees)
-    {
-        // YOUR IMPLEMENTATION HERE
+    {   double rads= Math.toRadians(degrees);
+        double mAsA [][] = {{Math.cos(rads),-1.0 * Math.sin(rads),0},{Math.sin(rads),Math.cos(rads),0},{0,0,1}};
+        Matrix m = Matrix.constructWithCopy(mAsA);
+        curTransform = m.times(curTransform);
     }
 
     /**
@@ -114,7 +176,9 @@ public class cgCanvas extends simpleCanvas {
      */
     public void scale (float x, float y)
     {
-        // YOUR IMPLEMENTATION HERE
+        double mAsA [][] = {{x,0,0},{0,y,0},{0,0,1}};
+        Matrix m = Matrix.constructWithCopy(mAsA);
+        curTransform = m.times(curTransform);
     }
 
     /**
@@ -129,7 +193,10 @@ public class cgCanvas extends simpleCanvas {
      */
     public void setClipWindow (float bottom, float top, float left, float right)
     {
-        // YOUR IMPLEMENTATION HERE
+        cws.bttm = bottom;
+        cws.left = left;
+        cws.top = top;
+        cws.right = right;
     }
 
 
@@ -137,15 +204,28 @@ public class cgCanvas extends simpleCanvas {
      *
      * setViewport - defines the viewport
      *
-     * @param xmin - x coord of lower left of view window (in screen coords)
-     * @param ymin - y coord of lower left of view window (in screen coords)
+     * @param x - x coord of lower left of view window (in screen coords)
+     * @param y - y coord of lower left of view window (in screen coords)
      * @param width - width of view window (in world coords)
      * @param height - width of view window (in world coords)
      *
      */
     public void setViewport (int x, int y, int width, int height)
     {
-        // YOUR IMPLEMENTATION HERE
+        vws.x = x;
+        vws.y = y;
+        vws. width = width;
+        vws.height = height;
     }
 
+
+    public class ClipWindowStruct{
+        public ClipWindowStruct(){}
+        public float bttm, top, left, right;
+    }
+
+    public class ViewWindowStruct{
+        public ViewWindowStruct(){}
+        public int x,y, width, height;
+    }
 }
