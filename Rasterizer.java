@@ -51,22 +51,22 @@ public class Rasterizer {
 
         //Create EdgeBuckets for all pairs n, n+1
         for(int i=0; i< n-1; i++){
-            if(y[i].floatValue() != y[i+1].floatValue()){
-                buckets.add(createEdgeBucket(x[i],y[i],x[i+1], y[i+1]));
+            if(y[i].intValue() != y[i+1].intValue()){
+                buckets.add(createEdgeBucket(x[i].intValue(),y[i].intValue(),x[i+1].intValue(), y[i+1].intValue()));
 
                 //find the yMin and yMax values for this polygon
-                if(ymin > y[i]){
-                    ymin = y[i];
+                if(ymin > y[i].intValue()){
+                    ymin = y[i].intValue();
                 }
-                if(ymax < y[i]){
-                    ymax = y[i];
+                if(ymax < y[i].intValue()){
+                    ymax = y[i].intValue();
                 }
             }
         }
 
         //Create EdgeBucket for the edge connecting the last and first points.
-        if(y[n-1] != y[0]){
-            buckets.add(createEdgeBucket(x[n-1],y[n-1],x[0], y[0]));
+        if(y[n-1].intValue() != y[0].intValue()){
+            buckets.add(createEdgeBucket(x[n-1].intValue(),y[n-1].intValue(),x[0].intValue(), y[0].intValue()));
             if(ymin > y[n-1] || ymin == -1){
                 ymin = y[n-1];
             }
